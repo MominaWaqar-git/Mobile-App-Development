@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context=".Home_Page">
+
+    <!-- App Title -->
+    <TextView
+        android:id="@+id/App_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/title"
+        android:textColor="#1B5E20"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="40dp" />
+
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/tomato__leaf"
+        app:layout_constraintTop_toBottomOf="@id/App_title"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"/>
+
+
+    <Button
+        android:id="@+id/camera"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Camera"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:drawableStart="@drawable/camera_icon_small"
+        android:drawablePadding="10dp"
+        android:background="#006600"
+        app:layout_constraintTop_toBottomOf="@id/imageView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="30dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+    <Button
+        android:id="@+id/gallery"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Gallery"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:drawableStart="@drawable/gallery_photos_icon_24"
+        android:drawablePadding="10dp"
+        android:background="#006600"
+        app:layout_constraintTop_toBottomOf="@id/camera"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+    <Button
+        android:id="@+id/instructions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Instructions"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:background="#006600"
+        android:drawableStart="@drawable/instruction_icon_24"
+        android:drawablePadding="10dp"
+        app:layout_constraintTop_toBottomOf="@id/gallery"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+
+    <Button
+        android:id="@+id/exit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Exit"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:drawableStart="@drawable/baseline_exit_to_app_24"
+        android:drawablePadding="10dp"
+        android:background="#006600"
+        app:layout_constraintTop_toBottomOf="@id/instructions"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="40dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
