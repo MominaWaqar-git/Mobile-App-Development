@@ -28,8 +28,8 @@ public class InstructionActivity extends AppCompatActivity {
             btn1.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent i = new Intent(InstructionActivity.this, Home_Page.class);
-                    startActivity(i);
+                    Intent intent = new Intent(InstructionActivity.this, Home_Page.class);
+                    startActivity(intent);
                 }
             });
             return insets;
