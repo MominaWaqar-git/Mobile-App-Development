@@ -1,0 +1,57 @@
+<resources>
+    <string name="app_name">AI Based Application</string>
+    <string name="title">Plant Disease Detection</string>
+    <string name="info_title">Instructions</string>
+    <string name="Step1">
+        "1. Capture a Leaf Image:
+    </string>
+    <string name="Step2">
+        - Click on the Camera button to take a clear photo of your plant leaf.
+        \n- Ensure the leaf is well-lit and focused."
+    </string>
+
+    <string name="Step3">
+         "2. Select from Gallery:
+    </string>
+
+    <string name="Step4">
+           - Click on the Gallery button to choose an existing image from your phone."
+    </string>
+
+    <string name="Step5">
+        "3. Analyze the Leaf:
+    </string>
+
+    <string name="Step6">
+        - After selecting or capturing the image, the app will analyze it using AI and predict the disease."
+    </string>
+
+    <string name="Step7">
+        "4. View Results:
+    </string>
+
+    <string name="Step8">
+        - The app will show the predicted disease, confidence level, and suggested treatment tips."
+    </string>
+
+    <string name="Step9">
+        "5. Tips for Accurate Detection:
+    </string>
+
+    <string name="Step10">
+        - Use well-focused images
+        \n- Avoid shadows or blurs
+        \n- Capture only one leaf per image"
+    </string>
+
+    <string name="Step11">
+            "6. Exit the App:
+    </string>
+
+    <string name="Step12">
+         - Use the Exit button to safely close the app."
+    </string>
+
+    <string name="back">Back</string>
+
+</resources>
