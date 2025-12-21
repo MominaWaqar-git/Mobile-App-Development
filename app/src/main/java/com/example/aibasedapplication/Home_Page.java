@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.widget.Button;
@@ -14,47 +13,41 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+
 public class Home_Page extends AppCompatActivity {
 
-    Button btnCamera, btnGallery, btnInstructions, btnExit;
-    ImageView imageView; // Show captured/selected image
+    Button btnCamera, btnGallery, btnPredict, btnExit;
+    ImageView imageView;
+    Bitmap selectedBitmap;
 
-    // Permission request launcher
-    private final ActivityResultLauncher<String> requestCameraPermission =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if(isGranted){
-                    openCamera();
-                } else {
-                    Toast.makeText(this, "Camera permission denied!", Toast.LENGTH_SHORT).show();
-                }
-            });
+    ModelHelper modelHelper;
+    List<String> labels = new ArrayList<>();
 
-    // Activity result launcher for camera
+    // Camera Result
     private final ActivityResultLauncher<Intent> cameraLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if(result.getResultCode() == RESULT_OK){
-                    Bundle extras = result.getData().getExtras();
-                    Bitmap imageBitmap = (Bitmap) extras.get("data");
-                    imageView.setImageBitmap(imageBitmap);
-
-                    // TODO: Pass imageBitmap to your ML model here
-                    Toast.makeText(this, "Camera Image Captured!", Toast.LENGTH_SHORT).show();
+                if (result.getResultCode() == RESULT_OK) {
+                    selectedBitmap = (Bitmap) result.getData().getExtras().get("data");
+                    imageView.setImageBitmap(selectedBitmap);
                 }
             });
 
-    // Activity result launcher for gallery
+    // Gallery Result
     private final ActivityResultLauncher<Intent> galleryLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
-                if(result.getResultCode() == RESULT_OK && result.getData() != null){
+                try {
                     Uri uri = result.getData().getData();
-                    imageView.setImageURI(uri);
-
-                    // TODO: Pass URI to your ML model here
-                    Toast.makeText(this, "Gallery Image Selected!", Toast.LENGTH_SHORT).show();
+                    selectedBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
+                    imageView.setImageBitmap(selectedBitmap);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             });
 
@@ -63,41 +56,87 @@ public class Home_Page extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_page);
 
-        // Link buttons
         btnCamera = findViewById(R.id.camera);
         btnGallery = findViewById(R.id.gallery);
-        btnInstructions = findViewById(R.id.instructions);
+        btnPredict = findViewById(R.id.predictButton);
         btnExit = findViewById(R.id.exit);
         imageView = findViewById(R.id.imageView);
 
-        // CAMERA BUTTON
+        modelHelper = new ModelHelper(this);
+        loadLabels();
+
         btnCamera.setOnClickListener(v -> {
-            if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                    != PackageManager.PERMISSION_GRANTED){
-                requestCameraPermission.launch(Manifest.permission.CAMERA);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.CAMERA}, 100);
             } else {
                 openCamera();
             }
         });
 
-        // GALLERY BUTTON
         btnGallery.setOnClickListener(v -> {
-            Intent galleryIntent = new Intent(Intent.ACTION_PICK);
-            galleryIntent.setType("image/*");
-            galleryLauncher.launch(galleryIntent);
+            Intent i = new Intent(Intent.ACTION_PICK);
+            i.setType("image/*");
+            galleryLauncher.launch(i);
         });
 
-        // INSTRUCTIONS BUTTON
-        btnInstructions.setOnClickListener(v -> {
-            startActivity(new Intent(Home_Page.this, InstructionActivity.class));
+        btnPredict.setOnClickListener(v -> {
+            if(selectedBitmap != null){
+                runPrediction(selectedBitmap);
+            } else {
+                Toast.makeText(this, "Select an image first", Toast.LENGTH_SHORT).show();
+            }
         });
 
-        // EXIT BUTTON
         btnExit.setOnClickListener(v -> finishAffinity());
     }
 
     private void openCamera() {
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        cameraLauncher.launch(cameraIntent);
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        cameraLauncher.launch(intent);
+    }
+
+    private void runPrediction(Bitmap bitmap){
+        Bitmap resized = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
+        float[][][][] input = new float[1][224][224][3];
+
+        for(int x=0; x<224; x++){
+            for(int y=0; y<224; y++){
+                int pixel = resized.getPixel(x,y);
+                input[0][x][y][0] = ((pixel >> 16) & 0xFF)/255f;
+                input[0][x][y][1] = ((pixel >> 8) & 0xFF)/255f;
+                input[0][x][y][2] = (pixel & 0xFF)/255f;
+            }
+        }
+
+        float[][] output = modelHelper.run(input);
+
+        int maxIndex = 0;
+        for(int i=0; i<output[0].length; i++){
+            if(output[0][i] > output[0][maxIndex]){
+                maxIndex = i;
+            }
+        }
+
+        String result = labels.get(maxIndex);
+        float confidence = output[0][maxIndex];
+
+        // Open ResultActivity
+        Intent intent = new Intent(Home_Page.this, ResultActivity.class);
+        intent.putExtra("image", bitmap);
+        intent.putExtra("label", result);
+        intent.putExtra("confidence", confidence);
+        startActivity(intent);
+    }
+
+    private void loadLabels(){
+        try{
+            BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("labels.txt")));
+            String line;
+            while((line = br.readLine()) != null){
+                labels.add(line);
+            }
+            br.close();
+        }catch(Exception e){ e.printStackTrace(); }
     }
 }
