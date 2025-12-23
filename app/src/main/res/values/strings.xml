@@ -2,6 +2,7 @@
     <string name="app_name">AI Based Application</string>
     <string name="title">Plant Disease Detection</string>
     <string name="info_title">Instructions</string>
+    <string name="homedesc">Upload a clear leaf image to detect plant diseases using AI.</string>
     <string name="Step1">
         "1. Capture a Leaf Image:
     </string>
