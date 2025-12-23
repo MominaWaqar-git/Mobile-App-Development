@@ -3,6 +3,15 @@
     <string name="title">پودوں کی بیماری کی تشخیص</string>
     <string name="homedesc">اے آئئ بیسڈ اپلیکیشن سے پحچان کے لئے پتے کی واٖٖٖضح تصویر لیں </string>
     <string name="info_title">ہدایات</string>
+    <string name="app_title">پلانٹ ڈیزیز آئیڈینٹیفائر</string>
+    <string name="uploadImg">تصویر اپ لوڈ کریں</string>
+    <string name="exit">باہر</string>
+
+    <string name="title_upload">پتہ کی تصویر اپ لوڈ کریں</string>
+    <string name="upload_txt">نیچے والے بٹن پر کلک کریں تاکہ تصویر کھینچیں یا گیلری سے منتخب کریں</string>
+    <string name="choose_img">تصویر منتخب کریں</string>
+    <string name="predict">پیشگوئی کریں</string>
+
 
     <string name="Step1">
         "1. پتے کی تصویر لیں:

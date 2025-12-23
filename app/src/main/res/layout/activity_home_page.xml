@@ -8,24 +8,39 @@
     android:id="@+id/main"
     tools:context=".Home_Page">
 
+    <TextView
+        android:id="@+id/app_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_title"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="#1B5E20"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="40dp"/>
+
     <!-- App Image -->
+
+
     <ImageView
         android:id="@+id/homeImage"
         android:layout_width="220dp"
         android:layout_height="220dp"
-        android:src="@drawable/splash"
+        android:layout_marginTop="100dp"
         android:scaleType="centerCrop"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        android:src="@drawable/splash"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="50dp"/>
-
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/homeDesc"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Upload a clear leaf image to detect plant diseases using AI."
+        android:text="@string/homedesc"
         android:textColor="#1B5E20"
         android:textSize="18sp"
         android:textAlignment="center"
@@ -46,7 +61,7 @@
         android:drawableStart="@drawable/baseline_file_upload_24"
         android:drawablePadding="12dp"
         android:drawableTint="@android:color/white"
-        android:text="Upload Image"
+        android:text="@string/uploadImg"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:layout_marginStart="40dp"
@@ -64,7 +79,7 @@
         android:drawableStart="@drawable/instruction_icon_24"
         android:drawablePadding="12dp"
         android:drawableTint="@android:color/white"
-        android:text="Instructions"
+        android:text="@string/info_title"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:layout_marginStart="40dp"
@@ -82,7 +97,7 @@
         android:drawableStart="@drawable/baseline_exit_to_app_24"
         android:drawablePadding="12dp"
         android:drawableTint="@android:color/white"
-        android:text="Exit"
+        android:text="@string/exit"
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:layout_marginStart="40dp"

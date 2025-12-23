@@ -3,6 +3,13 @@
     <string name="title">Plant Disease Detection</string>
     <string name="info_title">Instructions</string>
     <string name="homedesc">Upload a clear leaf image to detect plant diseases using AI.</string>
+    <string name="app_title">Plant Disease Identifier</string>
+    <string name="uploadImg">Upload Image</string>
+    <string name="exit">Exit</string>
+    <string name="title_upload">Upload Leaf Image</string>
+    <string name="upload_txt">Click the button below to take a photo or choose from gallery</string>
+    <string name="choose_img">Choose Image</string>
+    <string name="predict">Predict</string>
     <string name="Step1">
         "1. Capture a Leaf Image:
     </string>
