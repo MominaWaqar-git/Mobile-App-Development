@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class Upload_Image_Activity extends AppCompatActivity {
@@ -46,28 +48,28 @@ public class Upload_Image_Activity extends AppCompatActivity {
             Toast.makeText(this, "Model failed to load", Toast.LENGTH_LONG).show();
         }
 
-        // Choose Image
         btnChooseImage.setOnClickListener(v -> showImagePickerDialog());
 
-        // Predict
         btnPredict.setOnClickListener(v -> {
             if (selectedBitmap != null) {
+                PredictionResult result = modelHelper.predict(preprocessBitmap(selectedBitmap));
 
-                String disease = runPrediction(selectedBitmap);
+                // Convert bitmap to byte array to avoid crash
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                selectedBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
 
                 Intent intent = new Intent(this, ResultActivity.class);
-                intent.putExtra("image", selectedBitmap);
-                intent.putExtra("disease", disease);
-                intent.putExtra("confidence", 0);
+                intent.putExtra("image", byteArray);
+                intent.putExtra("disease", result.disease);
+                intent.putExtra("confidence", result.confidence);
                 startActivity(intent);
-
             } else {
                 Toast.makeText(this, "Please choose an image first", Toast.LENGTH_SHORT).show();
             }
         });
-    } // ✅ onCreate CLOSED HERE
+    }
 
-    // ================= DIALOG =================
     private void showImagePickerDialog() {
         String[] options = {"Camera", "Gallery"};
 
@@ -80,23 +82,17 @@ public class Upload_Image_Activity extends AppCompatActivity {
                 .show();
     }
 
-    // ================= CAMERA =================
     private void openCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{Manifest.permission.CAMERA},
-                    CAMERA_REQUEST
-            );
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
         } else {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             startActivityForResult(intent, CAMERA_REQUEST);
         }
     }
 
-    // ================= GALLERY =================
     private void openGallery() {
         String permission =
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
@@ -105,61 +101,48 @@ public class Upload_Image_Activity extends AppCompatActivity {
 
         if (ContextCompat.checkSelfPermission(this, permission)
                 != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{permission},
-                    GALLERY_REQUEST
-            );
+            ActivityCompat.requestPermissions(this,
+                    new String[]{permission}, GALLERY_REQUEST);
         } else {
-            Intent intent = new Intent(
-                    Intent.ACTION_PICK,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            );
+            Intent intent = new Intent(Intent.ACTION_PICK,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             startActivityForResult(intent, GALLERY_REQUEST);
         }
     }
 
-    // ================= RESULT =================
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK && data != null) {
-
-            if (requestCode == CAMERA_REQUEST) {
+            if (requestCode == CAMERA_REQUEST && data.getExtras() != null) {
                 selectedBitmap = (Bitmap) data.getExtras().get("data");
                 imgPreview.setImageBitmap(selectedBitmap);
             }
-
             if (requestCode == GALLERY_REQUEST) {
                 Uri imageUri = data.getData();
                 try {
-                    selectedBitmap = MediaStore.Images.Media
-                            .getBitmap(this.getContentResolver(), imageUri);
+                    selectedBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                     imgPreview.setImageBitmap(selectedBitmap);
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
     }
 
-    // ================= PREDICTION =================
-    private String runPrediction(Bitmap bitmap) {
-
+    private float[][][][] preprocessBitmap(Bitmap bitmap) {
         Bitmap resized = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
         float[][][][] input = new float[1][224][224][3];
 
         for (int y = 0; y < 224; y++) {
             for (int x = 0; x < 224; x++) {
                 int px = resized.getPixel(x, y);
-
                 input[0][y][x][0] = ((px >> 16) & 0xFF) / 255.0f;
                 input[0][y][x][1] = ((px >> 8) & 0xFF) / 255.0f;
                 input[0][y][x][2] = (px & 0xFF) / 255.0f;
             }
         }
-        return modelHelper.predict(input);
+        return input;
     }
 }
