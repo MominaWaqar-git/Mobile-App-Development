@@ -52,18 +52,24 @@ public class Upload_Image_Activity extends AppCompatActivity {
 
         btnPredict.setOnClickListener(v -> {
             if (selectedBitmap != null) {
-                PredictionResult result = modelHelper.predict(preprocessBitmap(selectedBitmap));
+                // Preprocess the image: center crop + resize + normalize
+                float[][][][] input = preprocessBitmap(selectedBitmap);
 
-                // Convert bitmap to byte array to avoid crash
+                // Get prediction
+                PredictionResult result = modelHelper.predict(input);
+
+                // Convert bitmap to byte array to safely pass to ResultActivity
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 selectedBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
                 byte[] byteArray = stream.toByteArray();
 
+                // Send to ResultActivity
                 Intent intent = new Intent(this, ResultActivity.class);
                 intent.putExtra("image", byteArray);
                 intent.putExtra("disease", result.disease);
                 intent.putExtra("confidence", result.confidence);
                 startActivity(intent);
+
             } else {
                 Toast.makeText(this, "Please choose an image first", Toast.LENGTH_SHORT).show();
             }
@@ -131,10 +137,22 @@ public class Upload_Image_Activity extends AppCompatActivity {
         }
     }
 
+    // ===================== Preprocess: Center Crop + Resize + Normalize =====================
     private float[][][][] preprocessBitmap(Bitmap bitmap) {
-        Bitmap resized = Bitmap.createScaledBitmap(bitmap, 224, 224, true);
-        float[][][][] input = new float[1][224][224][3];
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
 
+        // Step 1: Square Crop (center crop)
+        int newDim = Math.min(width, height);
+        int startX = (width - newDim) / 2;
+        int startY = (height - newDim) / 2;
+        Bitmap cropped = Bitmap.createBitmap(bitmap, startX, startY, newDim, newDim);
+
+        // Step 2: Resize to 224x224
+        Bitmap resized = Bitmap.createScaledBitmap(cropped, 224, 224, true);
+
+        // Step 3: Normalize pixels to 0-1
+        float[][][][] input = new float[1][224][224][3];
         for (int y = 0; y < 224; y++) {
             for (int x = 0; x < 224; x++) {
                 int px = resized.getPixel(x, y);
