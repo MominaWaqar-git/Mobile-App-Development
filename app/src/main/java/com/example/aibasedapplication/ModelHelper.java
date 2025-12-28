@@ -2,10 +2,16 @@ package com.example.aibasedapplication;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.graphics.Bitmap;
 
 import org.tensorflow.lite.Interpreter;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -15,42 +21,59 @@ public class ModelHelper {
 
     private Interpreter interpreter;
     private List<String> labels;
-
-    private static final float CONFIDENCE_THRESHOLD = 0.70f;
+    private static final int IMG_SIZE = 224;
 
     public ModelHelper(Context context) throws IOException {
-        interpreter = new Interpreter(loadModelFile(context));
+        interpreter = new Interpreter(loadModel(context));
         labels = loadLabels(context);
     }
 
-    private MappedByteBuffer loadModelFile(Context context) throws IOException {
-        AssetFileDescriptor fd = context.getAssets().openFd("model.tflite");
-        FileInputStream fis = new FileInputStream(fd.getFileDescriptor());
-        FileChannel channel = fis.getChannel();
-        return channel.map(FileChannel.MapMode.READ_ONLY, fd.getStartOffset(), fd.getDeclaredLength());
+    private MappedByteBuffer loadModel(Context context) throws IOException {
+        AssetFileDescriptor fileDescriptor = context.getAssets().openFd("plant_disease_model.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel channel = inputStream.getChannel();
+        return channel.map(FileChannel.MapMode.READ_ONLY, fileDescriptor.getStartOffset(), fileDescriptor.getDeclaredLength());
     }
 
     private List<String> loadLabels(Context context) throws IOException {
         List<String> list = new ArrayList<>();
-        BufferedReader br = new BufferedReader(
-                new InputStreamReader(context.getAssets().open("labelss.txt"))
-        );
+        BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open("labelsss.txt")));
         String line;
-        while ((line = br.readLine()) != null) {
-            list.add(line.trim().toLowerCase());
+        while ((line = reader.readLine()) != null) {
+            if (!line.trim().isEmpty()) {
+                list.add(line.trim());
+            }
         }
-        br.close();
+        reader.close();
         return list;
     }
 
-    public PredictionResult predict(float[][][][] input) {
+    public PredictionResult predict(Bitmap bitmap) throws Exception {
+        if (bitmap == null) throw new Exception("Bitmap is null");
+
+        Bitmap resized = Bitmap.createScaledBitmap(bitmap, IMG_SIZE, IMG_SIZE, true);
+
+        ByteBuffer inputBuffer = ByteBuffer.allocateDirect(4 * IMG_SIZE * IMG_SIZE * 3);
+        inputBuffer.order(ByteOrder.nativeOrder());
+
+        int[] pixels = new int[IMG_SIZE * IMG_SIZE];
+        resized.getPixels(pixels, 0, IMG_SIZE, 0, 0, IMG_SIZE, IMG_SIZE);
+
+        for (int pixel : pixels) {
+            float r = ((pixel >> 16) & 0xFF) / 255.0f;
+            float g = ((pixel >> 8) & 0xFF) / 255.0f;
+            float b = (pixel & 0xFF) / 255.0f;
+            inputBuffer.putFloat(r);
+            inputBuffer.putFloat(g);
+            inputBuffer.putFloat(b);
+        }
+        inputBuffer.rewind();
 
         float[][] output = new float[1][labels.size()];
-        interpreter.run(input, output);
+        interpreter.run(inputBuffer, output);
 
         int maxIndex = 0;
         float maxProb = output[0][0];
-
         for (int i = 1; i < output[0].length; i++) {
             if (output[0][i] > maxProb) {
                 maxProb = output[0][i];
@@ -58,40 +81,24 @@ public class ModelHelper {
             }
         }
 
-        if (maxProb < CONFIDENCE_THRESHOLD) {
-            return new PredictionResult("Unknown", "Not a leaf image", maxProb * 100);
-        }
+        String rawLabel = labels.get(maxIndex);
+        String plant = "";
+        String disease = "";
 
-        String label = labels.get(maxIndex);
-
-        if (label.contains("background")) {
-            return new PredictionResult("Unknown", "Unsupported image", maxProb * 100);
-        }
-
-        // ✅ correct parsing for your labels
-        String[] words = label.split(" ");
-
-        String plant = capitalize(words[0]);
-        String disease;
-
-        if (words.length <= 2) {
-            disease = "Healthy";
+        // Handle single or double underscores
+        if (rawLabel.contains("___")) {
+            String[] parts = rawLabel.split("___", 2);
+            plant = parts[0].replace("_", " ");
+            disease = parts[1].replace("_", " ");
+        } else if (rawLabel.contains("_")) {
+            String[] parts = rawLabel.split("_", 2);
+            plant = parts[0];
+            disease = parts[1].replace("_", " ");
         } else {
-            disease = capitalizeWords(label.replace(words[0], "").trim());
+            plant = rawLabel;
+            disease = "healthy";
         }
 
-        return new PredictionResult(plant, disease, maxProb * 100);
-    }
-
-    private String capitalize(String s) {
-        return s.substring(0,1).toUpperCase() + s.substring(1);
-    }
-
-    private String capitalizeWords(String text) {
-        StringBuilder sb = new StringBuilder();
-        for (String w : text.split(" ")) {
-            sb.append(capitalize(w)).append(" ");
-        }
-        return sb.toString().trim();
+        return new PredictionResult(plant, disease, maxProb * 100f);
     }
 }

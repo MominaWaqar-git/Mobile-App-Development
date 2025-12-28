@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class ResultActivity extends AppCompatActivity {
 
     ImageView imgResult;
-    TextView txtDisease, txtConfidence;
+    TextView txtPlant, txtDisease, txtConfidence;
     Button btnBack;
 
     @Override
@@ -22,24 +22,22 @@ public class ResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_result);
 
         imgResult = findViewById(R.id.imgResult);
+        txtPlant = findViewById(R.id.txtPlant);
         txtDisease = findViewById(R.id.txtDisease);
         txtConfidence = findViewById(R.id.txtConfidence);
         btnBack = findViewById(R.id.btnBack);
 
-        // Get Data
-        byte[] byteArray = getIntent().getByteArrayExtra("image");
-        Bitmap bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
-        imgResult.setImageBitmap(bitmap);
+        Intent intent = getIntent();
+        byte[] byteArray = intent.getByteArrayExtra("image");
+        if (byteArray != null) {
+            Bitmap bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
+            imgResult.setImageBitmap(bitmap);
+        }
 
-        String disease = getIntent().getStringExtra("disease");
-        float confidence = getIntent().getFloatExtra("confidence", 0);
+        txtPlant.setText("Plant: " + intent.getStringExtra("plant"));
+        txtDisease.setText("Disease: " + intent.getStringExtra("disease"));
+        txtConfidence.setText("Confidence: " + String.format("%.2f", intent.getFloatExtra("confidence", 0)) + "%");
 
-        txtDisease.setText("Disease: " + disease);
-        txtConfidence.setText("Confidence: " + String.format("%.2f", confidence) + "%");
-
-        btnBack.setOnClickListener(v -> {
-            Intent i = new Intent(ResultActivity.this, Upload_Image_Activity.class);
-            startActivity(i);
-        });
+        btnBack.setOnClickListener(v -> finish());
     }
 }

@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -29,7 +28,6 @@ public class Upload_Image_Activity extends AppCompatActivity {
 
     ImageView imgPreview;
     Button btnChooseImage, btnPredict;
-
     Bitmap selectedBitmap;
     ModelHelper modelHelper;
 
@@ -45,31 +43,33 @@ public class Upload_Image_Activity extends AppCompatActivity {
         try {
             modelHelper = new ModelHelper(this);
         } catch (IOException e) {
-            Toast.makeText(this, "Model failed to load", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Failed to load model", Toast.LENGTH_LONG).show();
         }
 
         btnChooseImage.setOnClickListener(v -> showImagePickerDialog());
 
         btnPredict.setOnClickListener(v -> {
             if (selectedBitmap != null) {
-                // Preprocess the image: center crop + resize + normalize
-                float[][][][] input = preprocessBitmap(selectedBitmap);
+                try {
+                    PredictionResult result = modelHelper.predict(selectedBitmap);
 
-                // Get prediction
-                PredictionResult result = modelHelper.predict(input);
+                    // Resize & compress before sending
+                    Bitmap sendBitmap = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    sendBitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream);
+                    byte[] byteArray = stream.toByteArray();
 
-                // Convert bitmap to byte array to safely pass to ResultActivity
-                ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                selectedBitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                byte[] byteArray = stream.toByteArray();
+                    Intent intent = new Intent(this, ResultActivity.class);
+                    intent.putExtra("image", byteArray);
+                    intent.putExtra("plant", result.plant);
+                    intent.putExtra("disease", result.disease);
+                    intent.putExtra("confidence", result.confidence);
+                    startActivity(intent);
 
-                // Send to ResultActivity
-                Intent intent = new Intent(this, ResultActivity.class);
-                intent.putExtra("image", byteArray);
-                intent.putExtra("disease", result.disease);
-                intent.putExtra("confidence", result.confidence);
-                startActivity(intent);
-
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Toast.makeText(this, "Prediction failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             } else {
                 Toast.makeText(this, "Please choose an image first", Toast.LENGTH_SHORT).show();
             }
@@ -78,21 +78,18 @@ public class Upload_Image_Activity extends AppCompatActivity {
 
     private void showImagePickerDialog() {
         String[] options = {"Camera", "Gallery"};
-
         new AlertDialog.Builder(this)
                 .setTitle("Select Image")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) openCamera();
                     else openGallery();
-                })
-                .show();
+                }).show();
     }
 
     private void openCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
         } else {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             startActivityForResult(intent, CAMERA_REQUEST);
@@ -100,18 +97,13 @@ public class Upload_Image_Activity extends AppCompatActivity {
     }
 
     private void openGallery() {
-        String permission =
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                        ? Manifest.permission.READ_MEDIA_IMAGES
-                        : Manifest.permission.READ_EXTERNAL_STORAGE;
+        String permission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ?
+                Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE;
 
-        if (ContextCompat.checkSelfPermission(this, permission)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{permission}, GALLERY_REQUEST);
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{permission}, GALLERY_REQUEST);
         } else {
-            Intent intent = new Intent(Intent.ACTION_PICK,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
             startActivityForResult(intent, GALLERY_REQUEST);
         }
     }
@@ -121,46 +113,22 @@ public class Upload_Image_Activity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK && data != null) {
-            if (requestCode == CAMERA_REQUEST && data.getExtras() != null) {
-                selectedBitmap = (Bitmap) data.getExtras().get("data");
-                imgPreview.setImageBitmap(selectedBitmap);
-            }
-            if (requestCode == GALLERY_REQUEST) {
-                Uri imageUri = data.getData();
-                try {
-                    selectedBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
-                    imgPreview.setImageBitmap(selectedBitmap);
-                } catch (Exception e) {
-                    e.printStackTrace();
+            try {
+                if (requestCode == CAMERA_REQUEST && data.getExtras() != null) {
+                    selectedBitmap = (Bitmap) data.getExtras().get("data");
+                } else if (requestCode == GALLERY_REQUEST) {
+                    Uri imageUri = data.getData();
+                    if (imageUri != null)
+                        selectedBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
                 }
+                if (selectedBitmap != null)
+                    imgPreview.setImageBitmap(selectedBitmap);
+                else
+                    Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error loading image", Toast.LENGTH_LONG).show();
             }
         }
-    }
-
-    // ===================== Preprocess: Center Crop + Resize + Normalize =====================
-    private float[][][][] preprocessBitmap(Bitmap bitmap) {
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-
-        // Step 1: Square Crop (center crop)
-        int newDim = Math.min(width, height);
-        int startX = (width - newDim) / 2;
-        int startY = (height - newDim) / 2;
-        Bitmap cropped = Bitmap.createBitmap(bitmap, startX, startY, newDim, newDim);
-
-        // Step 2: Resize to 224x224
-        Bitmap resized = Bitmap.createScaledBitmap(cropped, 224, 224, true);
-
-        // Step 3: Normalize pixels to 0-1
-        float[][][][] input = new float[1][224][224][3];
-        for (int y = 0; y < 224; y++) {
-            for (int x = 0; x < 224; x++) {
-                int px = resized.getPixel(x, y);
-                input[0][y][x][0] = ((px >> 16) & 0xFF) / 255.0f;
-                input[0][y][x][1] = ((px >> 8) & 0xFF) / 255.0f;
-                input[0][y][x][2] = (px & 0xFF) / 255.0f;
-            }
-        }
-        return input;
     }
 }
