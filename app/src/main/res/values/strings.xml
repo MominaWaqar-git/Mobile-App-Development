@@ -10,6 +10,9 @@
     <string name="upload_txt">Click the button below to take a photo or choose from gallery</string>
     <string name="choose_img">Choose Image</string>
     <string name="predict">Predict</string>
+    <string name="res_title">ُPrediction Results</string>
+    <string name="disease">Disease</string>
+    <string name="confidence">Confidence</string>
     <string name="Step1">
         "1. Capture a Leaf Image:
     </string>
@@ -39,7 +42,7 @@
     </string>
 
     <string name="Step8">
-        - The app will show the predicted disease, confidence level, and suggested treatment tips."
+        - The app will show the predicted disease, confidence level"
     </string>
 
     <string name="Step9">
@@ -61,5 +64,6 @@
     </string>
 
     <string name="back">Back</string>
+
 
 </resources>
