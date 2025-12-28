@@ -15,6 +15,7 @@
     <string name="res_title">نتائج</string>
     <string name="disease">بیماری</string>
     <string name="confidence">اعتماد</string>
+    <string name="plant_name">پودے کا نام</string>
 
     <string name="Step1">
         "1. پتے کی تصویر لیں:

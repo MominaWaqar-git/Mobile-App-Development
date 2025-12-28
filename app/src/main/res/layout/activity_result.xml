@@ -38,7 +38,7 @@
         android:id="@+id/txtPlant"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Plant Name"
+        android:text="@string/plant_name"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="#1B5E20"

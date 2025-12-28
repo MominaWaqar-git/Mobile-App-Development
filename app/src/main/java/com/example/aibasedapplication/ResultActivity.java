@@ -37,7 +37,6 @@ public class ResultActivity extends AppCompatActivity {
         txtPlant.setText("Plant: " + intent.getStringExtra("plant"));
         txtDisease.setText("Disease: " + intent.getStringExtra("disease"));
         txtConfidence.setText("Confidence: " + String.format("%.2f", intent.getFloatExtra("confidence", 0)) + "%");
-
         btnBack.setOnClickListener(v -> finish());
     }
 }
