@@ -32,12 +32,16 @@ public class ModelHelper {
         AssetFileDescriptor fileDescriptor = context.getAssets().openFd("plant_disease_model.tflite");
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel channel = inputStream.getChannel();
-        return channel.map(FileChannel.MapMode.READ_ONLY, fileDescriptor.getStartOffset(), fileDescriptor.getDeclaredLength());
+        return channel.map(FileChannel.MapMode.READ_ONLY,
+                fileDescriptor.getStartOffset(),
+                fileDescriptor.getDeclaredLength());
     }
 
     private List<String> loadLabels(Context context) throws IOException {
         List<String> list = new ArrayList<>();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(context.getAssets().open("labelsss.txt")));
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(context.getAssets().open("labelsss.txt"))
+        );
         String line;
         while ((line = reader.readLine()) != null) {
             if (!line.trim().isEmpty()) {
@@ -48,8 +52,41 @@ public class ModelHelper {
         return list;
     }
 
+    // ✅ NEW: Plant presence check (background rejection)
+    private boolean isPlantPresent(Bitmap bitmap) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        int greenCount = 0;
+
+        for (int pixel : pixels) {
+            int r = (pixel >> 16) & 0xFF;
+            int g = (pixel >> 8) & 0xFF;
+            int b = pixel & 0xFF;
+
+            if (g > r && g > b && g > 80) {
+                greenCount++;
+            }
+        }
+
+        float greenRatio = (float) greenCount / pixels.length;
+        return greenRatio > 0.15f; // 15% green required
+    }
+
     public PredictionResult predict(Bitmap bitmap) throws Exception {
         if (bitmap == null) throw new Exception("Bitmap is null");
+
+        // ✅ STEP 1: Background check
+        if (!isPlantPresent(bitmap)) {
+            return new PredictionResult(
+                    "No Plant",
+                    "Background Image",
+                    0f
+            );
+        }
 
         Bitmap resized = Bitmap.createScaledBitmap(bitmap, IMG_SIZE, IMG_SIZE, true);
 
@@ -63,6 +100,7 @@ public class ModelHelper {
             float r = ((pixel >> 16) & 0xFF) / 255.0f;
             float g = ((pixel >> 8) & 0xFF) / 255.0f;
             float b = (pixel & 0xFF) / 255.0f;
+
             inputBuffer.putFloat(r);
             inputBuffer.putFloat(g);
             inputBuffer.putFloat(b);
@@ -81,11 +119,21 @@ public class ModelHelper {
             }
         }
 
-        String rawLabel = labels.get(maxIndex);
-        String plant = "";
-        String disease = "";
+        float confidence = maxProb * 100f;
 
-        // Handle single or double underscores
+        // ✅ STEP 2: Confidence threshold
+        if (confidence < 60f) {
+            return new PredictionResult(
+                    "No Plant",
+                    "Background Image",
+                    confidence
+            );
+        }
+
+        String rawLabel = labels.get(maxIndex);
+        String plant;
+        String disease;
+
         if (rawLabel.contains("___")) {
             String[] parts = rawLabel.split("___", 2);
             plant = parts[0].replace("_", " ");
@@ -99,6 +147,6 @@ public class ModelHelper {
             disease = "healthy";
         }
 
-        return new PredictionResult(plant, disease, maxProb * 100f);
+        return new PredictionResult(plant, disease, confidence);
     }
 }
