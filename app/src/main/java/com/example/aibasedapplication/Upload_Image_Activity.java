@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 
 public class Upload_Image_Activity extends AppCompatActivity {
 
@@ -30,6 +31,9 @@ public class Upload_Image_Activity extends AppCompatActivity {
     Button btnChooseImage, btnPredict;
     Bitmap selectedBitmap;
     ModelHelper modelHelper;
+
+    // ✅ Mapping user-friendly name → full class name
+    HashMap<String, String> displayToClass;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,45 +47,83 @@ public class Upload_Image_Activity extends AppCompatActivity {
         try {
             modelHelper = new ModelHelper(this);
         } catch (IOException e) {
-            Toast.makeText(this, "Failed to load model", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Model load failed", Toast.LENGTH_LONG).show();
         }
+
+        initDisplayMap();
 
         btnChooseImage.setOnClickListener(v -> showImagePickerDialog());
 
         btnPredict.setOnClickListener(v -> {
-            if (selectedBitmap != null) {
-                try {
-                    PredictionResult result = modelHelper.predict(selectedBitmap);
+            if (selectedBitmap == null) {
+                Toast.makeText(this, "Please select image first", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-                    // Resize & compress before sending
-                    Bitmap sendBitmap = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
-                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                    sendBitmap.compress(Bitmap.CompressFormat.JPEG, 70, stream);
-                    byte[] byteArray = stream.toByteArray();
+            try {
+                PredictionResult result = modelHelper.predict(selectedBitmap);
 
-                    Intent intent = new Intent(this, ResultActivity.class);
-                    intent.putExtra("image", byteArray);
-                    intent.putExtra("plant", result.plant);
-                    intent.putExtra("disease", result.disease);
-                    intent.putExtra("confidence", result.confidence);
-                    startActivity(intent);
+                // ✅ Map short name to internal class name
+                String displayName = result.disease; // short readable name
+                String className = displayToClass.getOrDefault(displayName, "Unknown");
 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Toast.makeText(this, "Prediction failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            } else {
-                Toast.makeText(this, "Please choose an image first", Toast.LENGTH_SHORT).show();
+                String[] info = DiseaseInfo.getInfo(className);
+                String treatment = info[0];
+                String prevention = info[1];
+
+                // Compress image
+                Bitmap resized = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                resized.compress(Bitmap.CompressFormat.JPEG, 70, stream);
+
+                // Start ResultActivity
+                Intent intent = new Intent(this, ResultActivity.class);
+                intent.putExtra("image", stream.toByteArray());
+                intent.putExtra("disease", displayName); // short name
+                intent.putExtra("confidence", result.confidence);
+                intent.putExtra("treatment", treatment);
+                intent.putExtra("prevention", prevention);
+
+                startActivity(intent);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Prediction failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void initDisplayMap() {
+        displayToClass = new HashMap<>();
+
+        // ✅ Pepper Bell
+        displayToClass.put("Pepper Bacterial Spot", "Pepper__bell___Bacterial_spot");
+        displayToClass.put("Pepper Healthy", "Pepper__bell___healthy");
+
+        // ✅ Potato
+        displayToClass.put("Early blight", "Potato___Early_blight");
+        displayToClass.put("Late blight", "Potato___Late_blight");
+        displayToClass.put("Potato Healthy", "Potato___healthy");
+
+        // ✅ Tomato
+        displayToClass.put("Bacterial spot", "Tomato_Bacterial_spot");
+        displayToClass.put("Early blight", "Tomato_Early_blight");
+        displayToClass.put("Late blight", "Tomato_Late_blight");
+        displayToClass.put("Leaf Mold", "Tomato_Leaf_Mold");
+        displayToClass.put("Septoria leaf spot", "Tomato_Septoria_leaf_spot");
+        displayToClass.put("Spider mites", "Tomato_Spider_mites_Two_spotted_spider_mite");
+        displayToClass.put("Target Spot", "Tomato__Target_Spot");
+        displayToClass.put("YellowLeaf Curl Virus", "Tomato__Tomato_YellowLeaf__Curl_Virus");
+        displayToClass.put("Mosaic virus", "Tomato__Tomato_mosaic_virus");
+        displayToClass.put("Healthy", "Tomato_healthy");
     }
 
     private void showImagePickerDialog() {
         String[] options = {"Camera", "Gallery"};
         new AlertDialog.Builder(this)
                 .setTitle("Select Image")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) openCamera();
+                .setItems(options, (d, i) -> {
+                    if (i == 0) openCamera();
                     else openGallery();
                 }).show();
     }
@@ -89,45 +131,47 @@ public class Upload_Image_Activity extends AppCompatActivity {
     private void openCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA}, CAMERA_REQUEST);
         } else {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            startActivityForResult(intent, CAMERA_REQUEST);
+            startActivityForResult(
+                    new Intent(MediaStore.ACTION_IMAGE_CAPTURE), CAMERA_REQUEST);
         }
     }
 
     private void openGallery() {
-        String permission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ?
-                Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE;
+        String permission = Build.VERSION.SDK_INT >= 33 ?
+                Manifest.permission.READ_MEDIA_IMAGES :
+                Manifest.permission.READ_EXTERNAL_STORAGE;
 
-        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{permission}, GALLERY_REQUEST);
+        if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{permission}, GALLERY_REQUEST);
         } else {
-            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            startActivityForResult(intent, GALLERY_REQUEST);
+            startActivityForResult(
+                    new Intent(Intent.ACTION_PICK,
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI),
+                    GALLERY_REQUEST);
         }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    protected void onActivityResult(int req, int res, @Nullable Intent data) {
+        super.onActivityResult(req, res, data);
 
-        if (resultCode == RESULT_OK && data != null) {
+        if (res == RESULT_OK && data != null) {
             try {
-                if (requestCode == CAMERA_REQUEST && data.getExtras() != null) {
+                if (req == CAMERA_REQUEST && data.getExtras() != null) {
                     selectedBitmap = (Bitmap) data.getExtras().get("data");
-                } else if (requestCode == GALLERY_REQUEST) {
-                    Uri imageUri = data.getData();
-                    if (imageUri != null)
-                        selectedBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+                } else if (req == GALLERY_REQUEST) {
+                    Uri uri = data.getData();
+                    selectedBitmap = MediaStore.Images.Media.getBitmap(
+                            getContentResolver(), uri);
                 }
-                if (selectedBitmap != null)
-                    imgPreview.setImageBitmap(selectedBitmap);
-                else
-                    Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
+                imgPreview.setImageBitmap(selectedBitmap);
             } catch (Exception e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Error loading image", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Image load error", Toast.LENGTH_SHORT).show();
             }
         }
     }
