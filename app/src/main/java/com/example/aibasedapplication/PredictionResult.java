@@ -6,7 +6,7 @@ public class PredictionResult {
     public float confidence;
 
     public PredictionResult(String plant, String disease, float confidence) {
-        this.plant = plant;
+       // this.plant = plant;
         this.disease = disease;
         this.confidence = confidence;
     }

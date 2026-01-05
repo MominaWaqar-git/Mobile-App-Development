@@ -34,6 +34,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/txtResultTitle" />
 
+    <!--
+
     <TextView
         android:id="@+id/txtPlant"
         android:layout_width="wrap_content"
@@ -52,10 +54,7 @@
         app:layout_constraintTop_toBottomOf="@+id/txtResultTitle"
         app:layout_constraintVertical_bias="0.0" />
 
-    <!-- Confidence -->
-
-    <!-- Back Button -->
-
+-->
     <TextView
         android:id="@+id/txtDisease"
         android:layout_width="wrap_content"
@@ -66,10 +65,10 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.558"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintHorizontal_bias="0.202"
+        app:layout_constraintStart_toEndOf="@+id/imgResult"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.475" />
+        app:layout_constraintVertical_bias="0.496" />
 
     <TextView
         android:id="@+id/txtConfidence"

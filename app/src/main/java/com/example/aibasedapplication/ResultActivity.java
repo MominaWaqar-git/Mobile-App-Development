@@ -22,7 +22,7 @@ public class ResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_result);
 
         imgResult = findViewById(R.id.imgResult);
-        txtPlant = findViewById(R.id.txtPlant);
+       // txtPlant = findViewById(R.id.txtPlant);
         txtDisease = findViewById(R.id.txtDisease);
         txtConfidence = findViewById(R.id.txtConfidence);
         btnBack = findViewById(R.id.btnBack);
@@ -34,7 +34,7 @@ public class ResultActivity extends AppCompatActivity {
             imgResult.setImageBitmap(bitmap);
         }
 
-        txtPlant.setText("Plant: " + intent.getStringExtra("plant"));
+       // txtPlant.setText("Plant: " + intent.getStringExtra("plant"));
         txtDisease.setText("Disease: " + intent.getStringExtra("disease"));
         txtConfidence.setText("Confidence: " + String.format("%.2f", intent.getFloatExtra("confidence", 0)) + "%");
         btnBack.setOnClickListener(v -> finish());
