@@ -32,7 +32,6 @@ public class Upload_Image_Activity extends AppCompatActivity {
     Bitmap selectedBitmap;
     ModelHelper modelHelper;
 
-    // ✅ Mapping user-friendly name → full class name
     HashMap<String, String> displayToClass;
 
     @Override
@@ -63,23 +62,28 @@ public class Upload_Image_Activity extends AppCompatActivity {
             try {
                 PredictionResult result = modelHelper.predict(selectedBitmap);
 
-                // ✅ Map short name to internal class name
-                String displayName = result.disease; // short readable name
-                String className = displayToClass.getOrDefault(displayName, "Unknown");
+                String diseaseName = result.disease;
+                String treatment;
+                String prevention;
 
-                String[] info = DiseaseInfo.getInfo(className);
-                String treatment = info[0];
-                String prevention = info[1];
+                // ✅ HEALTHY CONDITION
+                if (diseaseName.toLowerCase().contains("healthy")) {
+                    treatment = "No treatment needed";
+                    prevention = "Maintain proper watering, sunlight, and regular plant care";
+                } else {
+                    String className = displayToClass.getOrDefault(diseaseName, "Unknown");
+                    String[] info = DiseaseInfo.getInfo(className);
+                    treatment = info[0];
+                    prevention = info[1];
+                }
 
-                // Compress image
                 Bitmap resized = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 resized.compress(Bitmap.CompressFormat.JPEG, 70, stream);
 
-                // Start ResultActivity
                 Intent intent = new Intent(this, ResultActivity.class);
                 intent.putExtra("image", stream.toByteArray());
-                intent.putExtra("disease", displayName); // short name
+                intent.putExtra("disease", diseaseName);
                 intent.putExtra("confidence", result.confidence);
                 intent.putExtra("treatment", treatment);
                 intent.putExtra("prevention", prevention);
@@ -87,8 +91,7 @@ public class Upload_Image_Activity extends AppCompatActivity {
                 startActivity(intent);
 
             } catch (Exception e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Prediction failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Prediction failed", Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -96,16 +99,10 @@ public class Upload_Image_Activity extends AppCompatActivity {
     private void initDisplayMap() {
         displayToClass = new HashMap<>();
 
-        // ✅ Pepper Bell
         displayToClass.put("Pepper Bacterial Spot", "Pepper__bell___Bacterial_spot");
-        displayToClass.put("Pepper Healthy", "Pepper__bell___healthy");
-
-        // ✅ Potato
         displayToClass.put("Early blight", "Potato___Early_blight");
         displayToClass.put("Late blight", "Potato___Late_blight");
-        displayToClass.put("Potato Healthy", "Potato___healthy");
 
-        // ✅ Tomato
         displayToClass.put("Bacterial spot", "Tomato_Bacterial_spot");
         displayToClass.put("Early blight", "Tomato_Early_blight");
         displayToClass.put("Late blight", "Tomato_Late_blight");
@@ -115,7 +112,6 @@ public class Upload_Image_Activity extends AppCompatActivity {
         displayToClass.put("Target Spot", "Tomato__Target_Spot");
         displayToClass.put("YellowLeaf Curl Virus", "Tomato__Tomato_YellowLeaf__Curl_Virus");
         displayToClass.put("Mosaic virus", "Tomato__Tomato_mosaic_virus");
-        displayToClass.put("Healthy", "Tomato_healthy");
     }
 
     private void showImagePickerDialog() {

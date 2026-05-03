@@ -14,6 +14,9 @@
     <string name="disease">Disease</string>
     <string name="confidence">Confidence</string>
     <string name="plant_name">Plant Name</string>
+    <string name="chatgpt">Chatgpt</string>
+    <string name="chatbot">Chatbot</string>
+
     <string name="Step1">
         "1. Capture a Leaf Image:
     </string>

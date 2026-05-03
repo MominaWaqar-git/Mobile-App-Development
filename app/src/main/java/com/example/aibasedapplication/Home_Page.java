@@ -27,7 +27,7 @@ import java.util.List;
 
 public class Home_Page extends AppCompatActivity {
 
-    Button btnUpload , btnInstruction , btnExit;
+    Button btnUpload , btnInstruction , btnExit , btnChatbot ,btnChatgpt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +37,8 @@ public class Home_Page extends AppCompatActivity {
         btnUpload = findViewById(R.id.btnUploadImage);
         btnInstruction = findViewById(R.id.btnInstructions);
         btnExit = findViewById(R.id.btnExit);
+        btnChatbot = findViewById(R.id.btnChatbot);
+
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -62,6 +64,9 @@ public class Home_Page extends AppCompatActivity {
             }
         });
 
+        btnChatbot.setOnClickListener(v -> {
+            startActivity(new Intent(Home_Page.this, ChatbotActivity.class));
+        });
 
         btnExit.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -49,17 +49,19 @@ public class ResultActivity extends AppCompatActivity {
         txtTreatment.setText("Treatment: " + treatment);
         txtPrevention.setText("Prevention: " + prevention);
 
-        // ✅ TTS
+        // ✅ TTS Initialization
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
                 tts.setLanguage(Locale.US);
-                tts.setSpeechRate(0.9f); // Slightly faster but clear
+                tts.setSpeechRate(1.0f); // normal speed (adjust as needed)
 
-                String speakText = "The predicted disease is " + disease +
-                        " with confidence " + String.format("%.2f", confidence) + " percent." +
-                        " Treatment: " + treatment + ". Prevention: " + prevention + ".";
-
-                tts.speak(speakText, TextToSpeech.QUEUE_FLUSH, null, "tts1");
+                // Speak after 500ms delay to allow UI to render
+                imgResult.postDelayed(() -> {
+                    String speakText = "The predicted disease is " + disease +
+                            " with confidence " + String.format("%.2f", confidence) + " percent." +
+                            " Treatment: " + treatment + ". Prevention: " + prevention + ".";
+                    tts.speak(speakText, TextToSpeech.QUEUE_FLUSH, null, "tts1");
+                }, 500);
             }
         });
 
